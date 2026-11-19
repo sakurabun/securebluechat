@@ -1,0 +1,6 @@
+First release.
+
+* Bluetooth Classic chat between two phones, no internet required
+* PIN-derived AES-256-GCM encryption with a challenge-response handshake
+* Typing indicator, message timestamps and long-press copy/delete
+* Chat history kept on-device, sealed with an Android Keystore key

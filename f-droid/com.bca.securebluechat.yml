@@ -1,0 +1,51 @@
+# Submission file for the official F-Droid repository.
+#
+# To submit: fork https://gitlab.com/fdroid/fdroiddata, copy this file to
+# `metadata/com.bca.securebluechat.yml`, then open a
+# merge request. The F-Droid build server clones the repo at the tagged commit
+# and builds it itself, so the tag must exist and the build must work from a
+# clean checkout (no keystore.properties, no local.properties).
+
+Categories:
+  - Internet
+  - Security
+License: GPL-3.0-or-later
+AuthorName: Neel
+AuthorEmail: sakurabun@users.noreply.github.com
+WebSite: https://github.com/sakurabun/securebluechat
+SourceCode: https://github.com/sakurabun/securebluechat
+IssueTracker: https://github.com/sakurabun/securebluechat/issues
+Changelog: https://github.com/sakurabun/securebluechat/releases
+
+AutoName: SecureBlue Chat
+
+Summary: Encrypted Bluetooth chat with no internet or accounts
+
+Description: |
+  A two-phone messenger that runs entirely over Bluetooth. There is no internet
+  permission and no server: the phones talk to each other directly.
+
+  Every message is sealed with AES-256-GCM. The key is derived from a PIN that
+  both people type, stretched with PBKDF2-HMAC-SHA256 over a random per-session
+  salt, and a challenge-response handshake proves both sides derived the same
+  key before any message is shown.
+
+  Features include a typing indicator, message timestamps, long-press copy and
+  delete, and a local chat history that survives restarts. History is sealed
+  with a separate key held in the Android Keystore, so the stored file is not
+  readable on another device.
+
+RepoType: git
+Repo: https://github.com/sakurabun/securebluechat.git
+
+Builds:
+  - versionName: '1.0'
+    versionCode: 1
+    commit: v1.0
+    gradle:
+      - yes
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: '1.0'
+CurrentVersionCode: 1

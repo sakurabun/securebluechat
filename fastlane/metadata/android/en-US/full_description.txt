@@ -1,0 +1,26 @@
+SecureBlue Chat is a two-phone messenger that runs entirely over Bluetooth. There is no internet permission, no account and no server: the phones talk to each other directly.
+
+ENCRYPTED BY DEFAULT
+Every message is sealed with AES-256-GCM. The key comes from a PIN that both people type, stretched with PBKDF2-HMAC-SHA256 over a random per-session salt. If the PINs do not match, the handshake fails and no message is ever shown.
+
+HOW A SESSION WORKS
+* One phone taps Wait, the other taps Scan and picks it from the list.
+* Both enter the same 4-8 digit PIN.
+* An encrypted challenge-response proves the keys match.
+* The chat opens with a solid lock icon in the toolbar.
+
+WHILE CHATTING
+* Timestamps on every message.
+* A live typing indicator, also encrypted.
+* Long-press a bubble to copy or delete it.
+* Clear the whole conversation behind a confirmation.
+
+HISTORY
+Conversations are kept on the phone across restarts and can be reopened from the home screen. History is sealed with a separate AES-256-GCM key that lives in the Android Keystore and never leaves the device, so a copy of the storage file is useless on another phone.
+
+GOOD TO KNOW
+* Both phones need the same version of the app.
+* Bluetooth must be on and the phones within range.
+* No internet, no accounts, no telemetry.
+
+Source code is available under the GNU GPL v3 or later.

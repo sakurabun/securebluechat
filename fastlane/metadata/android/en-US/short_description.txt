@@ -1,0 +1,1 @@
+Encrypted Bluetooth chat between two phones, no internet needed

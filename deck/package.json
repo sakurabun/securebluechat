@@ -1,0 +1,13 @@
+{
+  "name": "securebluechat-deck",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Generates the SecureBlue Chat presentation",
+  "scripts": {
+    "build": "node build-deck.mjs"
+  },
+  "dependencies": {
+    "pptxgenjs": "^3.12.0"
+  }
+}

@@ -1,0 +1,131 @@
+name: Publish F-Droid repository
+
+# Builds a signed release APK and publishes an F-Droid repository to GitHub Pages.
+# Run it by pushing a tag (git tag v1.0 && git push origin v1.0) or manually from
+# the Actions tab.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Restore signing keys
+        env:
+          APP_KEYSTORE_BASE64: ${{ secrets.APP_KEYSTORE_BASE64 }}
+          REPO_KEYSTORE_BASE64: ${{ secrets.REPO_KEYSTORE_BASE64 }}
+          APP_KEYSTORE_PASSWORD: ${{ secrets.APP_KEYSTORE_PASSWORD }}
+          REPO_KEYSTORE_PASSWORD: ${{ secrets.REPO_KEYSTORE_PASSWORD }}
+        run: |
+          mkdir -p release-signing
+          printf '%s' "$APP_KEYSTORE_BASE64" | base64 -d > release-signing/securebluechat-release.jks
+          printf '%s' "$REPO_KEYSTORE_BASE64" | base64 -d > release-signing/fdroid-repo.jks
+          cat > keystore.properties <<EOF
+          storeFile=release-signing/securebluechat-release.jks
+          storePassword=$APP_KEYSTORE_PASSWORD
+          keyAlias=securebluechat
+          keyPassword=$APP_KEYSTORE_PASSWORD
+          EOF
+
+      - name: Build signed release APK
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Install fdroidserver
+        run: python3 -m pip install --upgrade fdroidserver
+
+      - name: Build repository index
+        env:
+          REPO_KEYSTORE_PASSWORD: ${{ secrets.REPO_KEYSTORE_PASSWORD }}
+        run: |
+          REPO_NAME="${GITHUB_REPOSITORY#*/}"
+          # fdroidserver insists that repo_url ends with /repo, so the repository
+          # lives at <site>/repo/ and the landing page sits at <site>/.
+          REPO_URL="https://${GITHUB_REPOSITORY_OWNER}.github.io/${REPO_NAME}/repo"
+          echo "REPO_URL=$REPO_URL" >> "$GITHUB_ENV"
+          mkdir -p fdroid/repo fdroid/metadata/com.bca.securebluechat
+          cp app/build/outputs/apk/release/app-release.apk fdroid/repo/
+          cp -r fastlane/metadata/android/* fdroid/metadata/com.bca.securebluechat/
+          cat > fdroid/metadata/com.bca.securebluechat.yml <<EOF
+          Categories:
+            - Internet
+            - Security
+          License: GPL-3.0-or-later
+          AuthorName: Neel
+          WebSite: https://github.com/$GITHUB_REPOSITORY
+          SourceCode: https://github.com/$GITHUB_REPOSITORY
+          IssueTracker: https://github.com/$GITHUB_REPOSITORY/issues
+          AutoName: SecureBlue Chat
+          Summary: Encrypted Bluetooth chat with no internet or accounts
+          Description: |-
+            A two-phone messenger that runs entirely over Bluetooth. There is no
+            internet permission and no server: the phones talk to each other directly.
+
+            Every message is sealed with AES-256-GCM using a key derived from a PIN,
+            and a challenge-response handshake proves both sides derived the same key
+            before any message is shown.
+          EOF
+          cd fdroid
+          cat > config.yml <<EOF
+          repo_url: $REPO_URL
+          repo_name: SecureBlue Chat
+          repo_description: |-
+            Encrypted Bluetooth chat. Official builds of SecureBlue Chat, signed by the project.
+          archive_older: 0
+          keystore: ../release-signing/fdroid-repo.jks
+          repo_keyalias: repo
+          keystorepass: $REPO_KEYSTORE_PASSWORD
+          keypass: $REPO_KEYSTORE_PASSWORD
+          keydname: CN=SecureBlue Chat F-Droid repo, O=SecureBlue Chat, C=IN
+          EOF
+          chmod 600 config.yml
+          fdroid update --verbose
+
+      - name: Assemble the public site
+        run: |
+          # Only the repository and the landing page are public. fdroidserver
+          # writes config.yml (which holds the repo key password) and tmp/ next
+          # to it, so stage a clean directory instead of publishing fdroid/.
+          mkdir -p site
+          cp -r fdroid/repo site/repo
+          cat > site/index.html <<EOF
+          <!doctype html>
+          <meta charset="utf-8">
+          <title>SecureBlue Chat - F-Droid repository</title>
+          <style>
+            body { font-family: system-ui, sans-serif; background: #0b1020; color: #eaf0fa;
+                   max-width: 38rem; margin: 4rem auto; padding: 0 1.5rem; line-height: 1.65; }
+            a { color: #4c8dff; } code { background: #18233a; padding: .15rem .4rem; border-radius: .3rem; }
+            h1 { margin-bottom: .25rem; } .sub { color: #97a6c2; margin-top: 0; }
+          </style>
+          <h1>SecureBlue Chat</h1>
+          <p class="sub">Encrypted Bluetooth chat. This page is an F-Droid repository.</p>
+          <ol>
+            <li>Open F-Droid and go to <strong>Settings &rarr; Repositories</strong>.</li>
+            <li>Tap <strong>+</strong> and add <code>$REPO_URL</code>.</li>
+            <li>Refresh, search for <strong>SecureBlue Chat</strong> and install.</li>
+          </ol>
+          <p>Source code: <a href="https://github.com/${{ github.repository }}">github.com/${{ github.repository }}</a></p>
+          EOF
+
+      - name: Publish to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
+          publish_branch: gh-pages
+          # Never keep deleted files (or the old config.yml) in branch history.
+          force_orphan: true
+          commit_message: "F-Droid repo: ${{ github.ref_name }}"

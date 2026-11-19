@@ -1,0 +1,28 @@
+# Gradle / Android
+.gradle/
+build/
+app/build/
+captures/
+.cxx/
+.externalNativeBuild/
+*.iml
+.idea/
+local.properties
+
+# Logs and local artifacts
+build.log
+*.hprof
+*.log
+
+# Signing material - never commit these
+release-signing/
+keystore.properties
+*.jks
+*.keystore
+
+# Node (deck generator)
+deck/node_modules/
+
+# OS noise
+.DS_Store
+Thumbs.db
